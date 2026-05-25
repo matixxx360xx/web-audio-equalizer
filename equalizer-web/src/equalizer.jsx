@@ -209,7 +209,7 @@ function App() {
             <div className="options">
               <label className="upload">
                 🎵 Wybierz piosenkę
-                <input type="file" accept="audio/*" onChange={handleFile} hidden />
+                <input type="file" accept="audio/*" crossOrigin="anonymous" onChange={handleFile} hidden />
               </label>
               <button onClick={togglePlay}>
                 {isPlaying ? "⏸ Pause" : "▶ Play"}
