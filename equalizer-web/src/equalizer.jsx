@@ -237,14 +237,7 @@ function App() {
               })}
             </div>
 
-            <audio 
-              ref={audioRef} 
-              src={audioUrl} 
-              crossOrigin="anonymous" 
-              onTimeUpdate={handleTimeUpdate} 
-              onLoadedMetadata={handleLoaded} 
-            />
-            
+            <audio ref={audioRef} src={audioUrl} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoaded} />
             <div className="options">
               <label className="upload">
                 🎵 Wybierz piosenkę
