@@ -19,6 +19,8 @@ function App() {
   const [volume, setVolume] = useState(1);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [balance, setBalance] = useState(0);
+  const pannerRef = useRef(null);
 
   const ctxRef = useRef(null)
   const sourceRef = useRef(null)
@@ -43,13 +45,17 @@ function App() {
 
       analyser.getByteFrequencyData(data);
 
-      const bass = data.slice(0, 10).reduce((a, b) => a + b, 0) / 10;
-      const mids = data.slice(10, 40).reduce((a, b) => a + b, 0) / 30;
-      const highs = data.slice(40, 80).reduce((a, b) => a + b, 0) / 40;
 
-      document.querySelector(".bass").style.height = `${(bass / 255) * 100}%`;
-      document.querySelector(".mids").style.height = `${(mids / 255) * 100}%`;
-      document.querySelector(".highs").style.height = `${(highs / 255) * 100}%`;
+      const barElements = document.querySelectorAll(".visualizer .bar");
+
+      if (barElements.length > 0) {
+        for (let i = 0; i < barElements.length; i++) {
+          const value = data[i] || 0;
+          const percent = (value / 255) * 100;
+
+          barElements[i].style.height = `${percent}%`;
+        }
+      }
     }
 
     loop();
@@ -77,7 +83,14 @@ function App() {
     analyser.fftSize = 256;
 
     filters[filters.length - 1].connect(analyser);
-    analyser.connect(ctx.destination);
+    const panner = ctx.createStereoPanner();
+
+    panner.pan.value = balance;
+    pannerRef.current = panner;
+
+
+    analyser.connect(panner);
+    panner.connect(ctx.destination);
 
     analyserRef.current = analyser;
     dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
@@ -116,7 +129,25 @@ function App() {
       createEQ();
     }, 0)
   }
+  const changeBalance = (e) => {
+    const value = parseFloat(e.target.value);
+    setBalance(value);
 
+
+    if (pannerRef.current) {
+      pannerRef.current.pan.value = value;
+    }
+  };
+
+  const getLeftPercent = (val) => {
+    const volume = val <= 0 ? 1 : 1 - val;
+    return `${Math.round(volume * 100)}%`;
+  };
+
+  const getRightPercent = (val) => {
+    const volume = val >= 0 ? 1 : 1 + val;
+    return `${Math.round(volume * 100)}%`;
+  };
   const togglePlay = () => {
     if (!audioRef.current) return;
 
@@ -162,19 +193,32 @@ function App() {
         {audioUrl ? (
           <div className="player">
             <div className="visualizer">
-              <div className="bar bass"></div>
-              <div className="bar mids"></div>
-              <div className="bar highs"></div>
+              {Array.from({ length: 60 }).map((k, i) => {
+                let type = "highs";
+                if (i < 20) {
+                  type = "bass";
+                }
+                else if (i < 45) {
+                  type = "mids";
+                }
+                return <div key={i} className={`bar ${type}`}></div>;
+              })}
             </div>
-            <audio ref={audioRef} src={audioUrl} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoaded} />
 
-            <button onClick={togglePlay}>
-              {isPlaying ? "⏸ Pause" : "▶ Play"}
-            </button>
-            <input type="range" min="0" max={duration || 0} value={progress} onChange={seek} className="progress" />
-            <div className="volume">
-              <span>🔊</span>
-              <input type="range" min="0" max="1" step="0.01" value={volume} onChange={changeVolume} />
+            <audio ref={audioRef} src={audioUrl} onTimeUpdate={handleTimeUpdate} onLoadedMetadata={handleLoaded} />
+            <div className="options">
+              <label className="upload">
+                🎵 Wybierz piosenkę
+                <input type="file" accept="audio/*" onChange={handleFile} hidden />
+              </label>
+              <button onClick={togglePlay}>
+                {isPlaying ? "⏸ Pause" : "▶ Play"}
+              </button>
+              <input type="range" min="0" max={duration || 0} value={progress} onChange={seek} className="progress" />
+              <div className="volume">
+                <span>🔊</span>
+                <input type="range" min="0" max="1" step="0.01" value={volume} onChange={changeVolume} />
+              </div>
             </div>
           </div>
         ) : (
@@ -195,11 +239,34 @@ function App() {
                 const newEq = [...eq];
                 newEq[index].gain = parseInt(e.target.value);
                 setEq(newEq);
-              }}/>
+              }} />
 
             <span>{band.gain} dB</span>
           </div>
         ))}
+      </div>
+      <div className="balance-slider-container">
+        <div className="balance-controls">
+
+          <span className={`balance-text ${balance <= 0 ? 'full-volume' : ''}`}>
+            {getLeftPercent(balance)} L
+          </span>
+
+          <input
+            type="range"
+            min="-1"
+            max="1"
+            step="0.05"
+            value={balance}
+            onChange={changeBalance}
+            className="balance-slider"
+          />
+
+
+          <span className={`balance-text ${balance >= 0 ? 'full-volume' : ''}`}>
+            R {getRightPercent(balance)}
+          </span>
+        </div>
       </div>
     </>
   );
