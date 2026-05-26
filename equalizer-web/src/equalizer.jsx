@@ -31,12 +31,12 @@ function App() {
 
 
   const startVisualizer = () => {
-    console.log("📊 Inicjalizacja pętli wizualizatora...");
+    console.log("Inicjalizacja pętli wizualizatora");
     const analyser = analyserRef.current;
     const data = dataArrayRef.current;
 
     if (!analyser || !data) {
-      console.warn("⚠️ Brak analizatora lub tablicy danych do wizualizacji!");
+      console.warn("Brak analizatora lub tablicy danych do wizualizacji!");
       return;
     }
 
@@ -58,7 +58,7 @@ function App() {
 
   const createEQ = () => {
     try {
-      console.log("🎛️ Budowanie węzłów Web Audio API...");
+      console.log("Budowanie węzłów Web Audio API");
       const ctx = ctxRef.current;
       filtersRef.current = [];
 
@@ -96,10 +96,10 @@ function App() {
       analyserRef.current = analyser;
       dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
 
-      console.log("✅ Graf audio połączony pomyślnie!");
+      console.log("Graf audio połączony pomyślnie!");
       startVisualizer();
     } catch (error) {
-      console.error("❌ Błąd podczas budowania struktury EQ / Audio Context:", error);
+      console.error("Błąd podczas budowania struktury EQ / Audio Context:", error);
     }
   };
 
@@ -113,18 +113,19 @@ function App() {
   }, [eq]);
 
   const handleFile = (e) => {
+    setIsPlaying(false);
     const file = e.target.files[0];
     if (!file) return;
 
-    console.log(`🎵 Wybrano plik: ${file.name} (${file.type})`);
+    console.log(`Wybrano plik: ${file.name} (${file.type})`);
 
     if (!ctxRef.current) {
-      console.log("🚀 Tworzenie nowego AudioContext...");
+      console.log("Tworzenie nowego AudioContext...");
       ctxRef.current = new (window.AudioContext || window.webkitAudioContext)();
     }
 
     const url = URL.createObjectURL(file);
-    console.log("🔗 Wygenerowany Blob URL:", url);
+    console.log("Wygenerowany Blob URL:", url);
     setAudioUrl(url);
 
     setTimeout(() => {
@@ -133,22 +134,20 @@ function App() {
         const ctx = ctxRef.current;
 
         if (!audio) {
-          console.error("❌ Element <audio> nie jest jeszcze dostępny w DOM!");
+          console.error("Element <audio> nie jest jeszcze dostępny w DOM!");
           return;
         }
 
-        if (sourceRef.current) {
-          console.log("🔄 Odłączanie starego źródła audio...");
-          sourceRef.current.disconnect();
+       if (!sourceRef.current) {
+          console.log("Tworzenie MediaElementSource po raz pierwszy...");
+          sourceRef.current = ctx.createMediaElementSource(audio);
+
+          createEQ();
+        } else {
+          console.log("MediaElementSource już istnieje dla tego tagu <audio>. Pomijam tworzenie.");
         }
-
-        console.log("🔌 Tworzenie MediaElementSource z elementu <audio>...");
-        sourceRef.current = ctx.createMediaElementSource(audio);
-
-        createEQ();
       } catch (error) {
-        console.error("❌ Wyjątek w createMediaElementSource (częsty błąd CORS/Censorship):", error);
-        console.warn("💡 Podpowiedź: Jeśli tu jest błąd, upewnij się, że atrybut crossOrigin na elemencie <audio> działa prawidłowo.");
+        console.error("Wyjątek w createMediaElementSource:", error);
       }
     }, 0);
   };
@@ -175,21 +174,21 @@ function App() {
     if (!audioRef.current) return;
 
     if (ctxRef.current && ctxRef.current.state === "suspended") {
-      console.log("💤 AudioContext był uśpiony. Wybudzanie...");
+      console.log("AudioContext był uśpiony. Wybudzanie");
       ctxRef.current.resume().then(() => {
-        console.log("⏰ AudioContext został pomyślnie wybudzony. Stan:", ctxRef.current.state);
+        console.log("AudioContext został pomyślnie wybudzony. Stan:", ctxRef.current.state);
       });
     }
 
     if (isPlaying) {
-      console.log("⏸️ Pauza");
+      console.log("⏸Pauza");
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      console.log("▶️ Odtwarzanie...");
+      console.log("▶Odtwarzanie");
       audioRef.current.play()
-        .then(() => console.log("🔊 Odgrywanie audio rozpoczęte bez błędów."))
-        .catch(err => console.error("❌ Przeglądarka zablokowała audioRef.current.play():", err));
+        .then(() => console.log("Odgrywanie audio rozpoczęte bez błędów."))
+        .catch(err => console.error("Przeglądarka zablokowała audioRef.current.play():", err));
       setIsPlaying(true);
     }
   };
@@ -210,7 +209,7 @@ function App() {
   const handleLoaded = () => {
     const audio = audioRef.current;
     if (audio) {
-      console.log(`📊 Dane załadowane. Długość utworu: ${audio.duration}s`);
+      console.log(`Dane załadowane. Długość utworu: ${audio.duration}s`);
       setDuration(audio.duration);
     }
   };
